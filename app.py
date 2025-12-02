@@ -5,7 +5,7 @@ import seaborn as sns
 import plotly.express as px
 from datetime import datetime, timedelta
 
-df = pd.read_excel(r"C:\Users\spicj\Documents\OBLineouts\OBLineouts.xlsx")
+df = pd.read_excel("OBLineouts.xlsx")
 df['Timestamp'] =df['Timestamp'].astype(str)
 df['Personnel'] = df['Personnel'].round(0).astype(int)
 st.set_page_config(layout="wide")
@@ -350,4 +350,5 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
+
 
