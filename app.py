@@ -5,7 +5,7 @@ import seaborn as sns
 import plotly.express as px
 from datetime import datetime, timedelta
 
-df = pd.read_excel("OBLineouts.xlsx")
+df = pd.read_excel(r"C:\Users\spicj\Documents\OBLineouts\OBLineouts.xlsx")
 df['Timestamp'] =df['Timestamp'].astype(str)
 df['Personnel'] = df['Personnel'].round(0).astype(int)
 st.set_page_config(layout="wide")
@@ -97,12 +97,27 @@ def defended(df):
 col1, col2 = st.columns(2)
 
 with col1: 
-    selected_team = st.selectbox("Select Team", df["Team"].unique())
+    # Create two columns: logo on the left, slicer on the right
+    logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
+
+    with logo_col:
+        st.image("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png", width=60)
+
+    with slicer_col:
+        selected_team = st.selectbox("Select Team", df["Team"].unique())
+
 
 
 
 with col2:
-    selected_team = st.selectbox("Select Opponent", df["Opponent"].unique())
+    # Create two columns: logo on the left, slicer on the right
+    logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
+
+    with logo_col:
+        st.image("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png", width=60)
+
+    with slicer_col:
+        selected_team = st.selectbox("Select Opponent", df["Opponent"].unique())
 
 filtered_df = df[df["Opponent"] == selected_team]
 
@@ -124,7 +139,7 @@ styled_html_1 = f"""
 
         .table1 table {{
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 16px;
+            font-size: 18px;
             padding: 4px 8px !important;
             line-height: 1.2;
             white-space: nowrap;
@@ -173,7 +188,7 @@ styled_html_2 = f"""
 
         .table2 table {{
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 16px;
+            font-size: 18px;
             padding: 4px 8px !important;
             line-height: 1.2;
             white-space: nowrap;
@@ -198,14 +213,12 @@ styled_html_2 = f"""
             font-size: 24px;
             color: #FF0000;
         }}
-    </style>
-    <div class="logo-container">
-        <img src = "https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png" >
+        <img src="https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png">
         <span>Old Belvedere</span>
+           </style>
     </div>
     <div class="custom-table">
         {opposition_df_view.style.hide(axis="index").to_html()}
-
 """
 
 st.markdown("""
@@ -226,7 +239,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-with col1:
+st.markdown("""
+<style>
+.metric-card {
+    background-color: #f9f9f9; /* Light background */
+    border-radius: 12px;       /* Soft rounded corners */
+    padding: 16px;
+    margin: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Subtle shadow */
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+}
+.metric-card h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 8px;
+}
+.metric-card p {
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
+with col1:  
     st.markdown(styled_html_1, unsafe_allow_html=True)
     m1, m2, m3 = st.columns(3)
     m1.metric("Most Common Call", mode(your_team_df))
@@ -307,5 +346,8 @@ fig.update_layout(
 )
 
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True, config={
+    'displayModeBar': False,  # Hide toolbar
+    'scrollZoom': False       # Disable scroll zoom
+})
 
