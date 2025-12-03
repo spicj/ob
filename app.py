@@ -101,7 +101,7 @@ with col1:
     logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
 
     with logo_col:
-        st.image("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png", width=60)
+        st.image("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png", use_column_width=True)
 
     with slicer_col:
         selected_team = st.selectbox("Select Team", df["Team"].unique())
@@ -114,7 +114,7 @@ with col2:
     logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
 
     with logo_col:
-        st.image("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png", width=60)
+        st.image("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png", use_column_width=True)
 
     with slicer_col:
         selected_team = st.selectbox("Select Opponent", df["Opponent"].unique())
@@ -350,5 +350,6 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
+
 
 
