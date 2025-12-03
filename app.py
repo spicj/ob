@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 from datetime import datetime, timedelta
+from PIL import Image
+import requests
+from io import BytesIO
+
 
 df = pd.read_excel("OBLineouts.xlsx")
 df['Timestamp'] =df['Timestamp'].astype(str)
@@ -93,15 +97,23 @@ def defended(df):
     return (df["Defended"].eq("Y").sum() / len(df["Defended"])) * 100 if len(df) > 0 else 0
 
 
+def load_and_resize(url, size=(50, 60)):
+    response = requests.get(url)
+    img = Image.open(BytesIO(response.content))
+    return img.resize(size)
+
+logo1 = load_and_resize("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png")
+logo2 = load_and_resize("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png")
+
 # Create two columns
 col1, col2 = st.columns(2)
 
 with col1: 
     # Create two columns: logo on the left, slicer on the right
-    logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
+    logo_col, slicer_col, spacer= st.columns([1, 8,0.5]) # Adjust ratio for spacing
 
     with logo_col:
-        st.image("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png", use_column_width=True)
+        st.image(logo1)
 
     with slicer_col:
         selected_team = st.selectbox("Select Team", df["Team"].unique())
@@ -111,10 +123,10 @@ with col1:
 
 with col2:
     # Create two columns: logo on the left, slicer on the right
-    logo_col, slicer_col = st.columns([1, 7])  # Adjust ratio for spacing
+    logo_col, slicer_col, spacer= st.columns([1, 8,0.5])  # Adjust ratio for spacing
 
     with logo_col:
-        st.image("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png", use_column_width=True)
+        st.image(logo2)
 
     with slicer_col:
         selected_team = st.selectbox("Select Opponent", df["Opponent"].unique())
@@ -350,6 +362,4 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
-
-
 
