@@ -315,7 +315,7 @@ fig.add_trace(go.Scatter(
     x=opposition_df["Distance to Opponent Tryline"], y=opposition_df["Side"],
     mode="markers",
     marker=dict(size=20, color="#307FC6", opacity=0.7),
-    name="Old Wesley",
+    name="St. Mary's",
     text=opposition_df["Call"]
 ))
 # Draw pitch background
@@ -362,5 +362,6 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
+
 
 
