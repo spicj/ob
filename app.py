@@ -103,7 +103,7 @@ def load_and_resize(url, size=(50, 60)):
     return img.resize(size)
 
 logo1 = load_and_resize("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png")
-logo2 = load_and_resize("https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png")
+logo2 = load_and_resize("https://www.oldwesley.ie/wp-content/uploads/2019/11/St-Marys-RFC-Crest.png")
 
 # Create two columns
 col1, col2 = st.columns(2)
@@ -207,7 +207,7 @@ styled_html_2 = f"""
             border-collapse: collapse;
         }}
         .table2 th {{
-            background-color: #FF0000;
+            background-color: #307FC6;
             color: white;
             font-size: 18px;
         }}
@@ -223,7 +223,7 @@ styled_html_2 = f"""
         .table2 .logo-container span {{
             font-family: 'Bebas Neue', sans-serif;
             font-size: 24px;
-            color: #FF0000;
+            color: #307FC6;
         }}
         <img src="https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png">
         <span>Old Belvedere</span>
@@ -314,7 +314,7 @@ fig.add_trace(go.Scatter(
 fig.add_trace(go.Scatter(
     x=opposition_df["Distance to Opponent Tryline"], y=opposition_df["Side"],
     mode="markers",
-    marker=dict(size=20, color="#FF0000", opacity=0.7),
+    marker=dict(size=20, color="#307FC6", opacity=0.7),
     name="Old Wesley",
     text=opposition_df["Call"]
 ))
@@ -362,4 +362,5 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
+
 
