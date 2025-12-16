@@ -15,7 +15,7 @@ df["Personnel"] = df["Personnel"].round(0).astype(int)
 
 st.set_page_config(layout="wide")
 
-with open(r"C:\Users\spicj\Documents\OB Lineouts\team_formats.json", "r") as f:
+with open(r"team_formats.json", "r") as f:
     stylers = json.load(f)
 
 # -------------------------------
@@ -402,5 +402,6 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
+
 
 
