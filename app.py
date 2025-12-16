@@ -1,142 +1,182 @@
+
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-from datetime import datetime, timedelta
-from PIL import Image
+import json
 import requests
+from PIL import Image
 from io import BytesIO
 
+# -------------------------------
+# Data load & page config
+# -------------------------------
+df = pd.read_excel("OBLineouts.xlsx", engine="openpyxl")
+df["Timestamp"] = df["Timestamp"].astype(str)
+df["Personnel"] = df["Personnel"].round(0).astype(int)
 
-df = pd.read_excel("OBLineouts.xlsx")
-df['Timestamp'] =df['Timestamp'].astype(str)
-df['Personnel'] = df['Personnel'].round(0).astype(int)
 st.set_page_config(layout="wide")
 
+with open(r"C:\Users\spicj\Documents\OB Lineouts\team_formats.json", "r") as f:
+    stylers = json.load(f)
+
+# -------------------------------
+# Styling (Bebas Neue + custom CSS)
+# -------------------------------
 st.markdown("""
 <style>
     h1 {
         font-family: 'Bebas Neue', sans-serif;
         font-size: 60px;
         color: #000000;
-        text-align: center; /* Centers the title */
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("Old Belvedere Juniors - Lineouts")
 
-
-
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 
-    /* Apply Bebas Neue globally */
     html, body, [class*="css"] {
         font-family: 'Bebas Neue', sans-serif !important;
     }
+    p { font-size: 18px; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Bebas Neue', sans-serif !important; }
 
-    /* Optional: Adjust default paragraph size */
-    p {
+    /* Streamlit widgets */
+    div[data-baseweb="select"], div[data-baseweb="slider"], div[data-baseweb="input"] label {
+        font-family: 'Bebas Neue', sans-serif;
         font-size: 18px;
+        color: #000000;
     }
-
-    /* Headings */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Bebas Neue', sans-serif !important;
+    div[data-baseweb="select"] span {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 16px;
+    }
+    div[data-baseweb="slider"] span {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 16px;
+        color: #FF0000;
+    }
+    button[kind="primary"] {
+        font-family: 'Bebas Neue', sans-serif;
+        background-color: #000000;
+        color: white;
+        font-size: 18px;
+        border-radius: 6px;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# -------------------------------
+# Helpers
+# -------------------------------
+def mode(df_subset):
+    return df_subset["Call"].mode()[0] if not df_subset["Call"].mode().empty else "N/A"
 
+def success(df_subset):
+    return (df_subset["Outcome"].eq("Won").sum() / len(df_subset["Outcome"])) * 100 if len(df_subset) > 0 else 0
 
-st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-
-        /* Apply font to all Streamlit widgets */
-        div[data-baseweb="select"], div[data-baseweb="slider"], div[data-baseweb="input"] label {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 18px;
-            color: #000000; /* Black text */
-        }
-
-        /* Dropdown options */
-        div[data-baseweb="select"] span {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 16px;
-        }
-
-        /* Slider value */
-        div[data-baseweb="slider"] span {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 16px;
-            color: #FF0000; /* Red for emphasis */
-        }
-
-        /* Buttons */
-        button[kind="primary"] {
-            font-family: 'Bebas Neue', sans-serif;
-            background-color: #000000;
-            color: white;
-            font-size: 18px;
-            border-radius: 6px;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-def mode(df):
-    return df["Call"].mode()[0] if not df["Call"].mode().empty else "N/A"
-
-def success(df):
-    return (df["Outcome"].eq("Won").sum() / len(df["Outcome"])) * 100 if len(df) > 0 else 0
-
-def defended(df):
-    return (df["Defended"].eq("Y").sum() / len(df["Defended"])) * 100 if len(df) > 0 else 0
-
+def defended(df_subset):
+    return (df_subset["Defended"].eq("Y").sum() / len(df_subset["Defended"])) * 100 if len(df_subset) > 0 else 0
 
 def load_and_resize(url, size=(50, 60)):
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
-    return img.resize(size)
+    if not url:
+        return None
+    try:
+        resp = requests.get(url, timeout=6)
+        resp.raise_for_status()
+        img = Image.open(BytesIO(resp.content))
+        return img.resize(size)
+    except Exception:
+        return None  # fail quietly and show "No logo available"
 
-logo1 = load_and_resize("https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png")
-logo2 = load_and_resize("https://www.oldwesley.ie/wp-content/uploads/2019/11/St-Marys-RFC-Crest.png")
+def get_logo_and_color(team: str):
+    cfg = stylers.get(str(team), {})
+    return cfg.get("logo"), cfg.get("header_color")
 
-# Create two columns
+# -------------------------------
+# Valid selection lists (ensure logos exist)
+# -------------------------------
+teams_with_styles = set(stylers.keys())
+valid_teams = sorted(set(df["Team"]).intersection(teams_with_styles))
+valid_opponents = sorted(set(df["Opponent"]).intersection(teams_with_styles))
+
+# Initialize session state defaults
+if "selected_team" not in st.session_state and valid_teams:
+    st.session_state.selected_team = valid_teams[0]
+if "selected_opponent" not in st.session_state and valid_opponents:
+    st.session_state.selected_opponent = valid_opponents[0]
+
+# -------------------------------
+# Layout: two main columns
+# -------------------------------
 col1, col2 = st.columns(2)
 
-with col1: 
-    # Create two columns: logo on the left, slicer on the right
-    logo_col, slicer_col, spacer= st.columns([1, 8,0.5]) # Adjust ratio for spacing
-
-    with logo_col:
-        st.image(logo1)
+# === TEAM column ===
+with col1:
+    logo_col, slicer_col, _ = st.columns([1, 8, 0.5])
 
     with slicer_col:
-        selected_team = st.selectbox("Select Team", df["Team"].unique())
+        st.selectbox(
+            "Select Team",
+            valid_teams,
+            index=valid_teams.index(st.session_state.selected_team) if valid_teams else 0,
+            key="selected_team",
+        )
 
+    team_logo_url, team_header_color = get_logo_and_color(st.session_state.selected_team)
+    team_logo_img = load_and_resize(team_logo_url)
 
+    # Store globally for use anywhere else in the app
+    st.session_state["team_logo_url"] = team_logo_url
+    st.session_state["team_logo_img"] = team_logo_img
+    st.session_state["team_header_color"] = team_header_color
 
+    with logo_col:
+        if team_logo_img:
+            st.image(team_logo_img)
+        else:
+            st.write("No logo available")
 
+# === OPPONENT column ===
 with col2:
-    # Create two columns: logo on the left, slicer on the right
-    logo_col, slicer_col, spacer= st.columns([1, 8,0.5])  # Adjust ratio for spacing
-
-    with logo_col:
-        st.image(logo2)
+    logo_col, slicer_col, _ = st.columns([1, 8, 0.5])
 
     with slicer_col:
-        selected_team = st.selectbox("Select Opponent", df["Opponent"].unique())
+        st.selectbox(
+            "Select Opponent",
+            valid_opponents,
+            index=valid_opponents.index(st.session_state.selected_opponent) if valid_opponents else 0,
+            key="selected_opponent",
+        )
 
-filtered_df = df[df["Opponent"] == selected_team]
+    opp_logo_url, opp_header_color = get_logo_and_color(st.session_state.selected_opponent)
+    opp_logo_img = load_and_resize(opp_logo_url)
+
+    # Store globally for use anywhere else in the app
+    st.session_state["opponent_logo_url"] = opp_logo_url
+    st.session_state["opponent_logo_img"] = opp_logo_img
+    st.session_state["opponent_header_color"] = opp_header_color
+
+    with logo_col:
+        if opp_logo_img:
+            st.image(opp_logo_img)
+        else:
+            st.write("No logo available")
 
 
-your_team_df = filtered_df[filtered_df["Throw In"] == "Old Belvedere"]
 
-opposition_df = filtered_df[filtered_df["Throw In"] != "Old Belvedere"]
+fixture_df = df[
+    (df["Team"] == st.session_state.selected_team) &
+    (df["Opponent"] == st.session_state.selected_opponent)
+].copy()
+
+# 2) Split by who had the throw in
+your_team_df = fixture_df[fixture_df["Throw In"] == "Old Belvedere"]
+opposition_df = fixture_df[fixture_df["Throw In"] == st.session_state.selected_opponent].copy()
+
 
 your_team_df_view = your_team_df[['Call', 'Movement', 'Outcome', 'Clean','Play', 'Receiver', 'Defended', 'Defender', 'Personnel']]
 opposition_df_view = opposition_df[['Call', 'Movement', 'Outcome', 'Clean','Play', 'Receiver', 'Defended', 'Defender', 'Personnel']]
@@ -158,7 +198,7 @@ styled_html_1 = f"""
             border-collapse: collapse;
         }}
         .table1 th {{
-            background-color: #000000;
+            background-color: {team_header_color};
             color: white;
             font-size: 18px;
         }}
@@ -174,11 +214,11 @@ styled_html_1 = f"""
         .table1 .logo-container span {{
             font-family: 'Bebas Neue', sans-serif;
             font-size: 24px;
-            color: #000000;
+            color: {team_header_color};
         }}
     </style>
     <div class="logo-container">
-        <img src = "https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png" >
+        <img src = team_logo_url >
         <span>Old Belvedere</span>
     </div>
     <div class="custom-table">
@@ -207,7 +247,7 @@ styled_html_2 = f"""
             border-collapse: collapse;
         }}
         .table2 th {{
-            background-color: #307FC6;
+            background-color: {opp_header_color};
             color: white;
             font-size: 18px;
         }}
@@ -223,7 +263,7 @@ styled_html_2 = f"""
         .table2 .logo-container span {{
             font-family: 'Bebas Neue', sans-serif;
             font-size: 24px;
-            color: #307FC6;
+            color: {opp_header_color};
         }}
         <img src="https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png">
         <span>Old Belvedere</span>
@@ -314,8 +354,8 @@ fig.add_trace(go.Scatter(
 fig.add_trace(go.Scatter(
     x=opposition_df["Distance to Opponent Tryline"], y=opposition_df["Side"],
     mode="markers",
-    marker=dict(size=20, color="#307FC6", opacity=0.7),
-    name="St. Mary's",
+    marker=dict(size=20, color= opp_header_color, opacity=0.7),
+    name= st.session_state.selected_opponent,
     text=opposition_df["Call"]
 ))
 # Draw pitch background
@@ -362,6 +402,5 @@ st.plotly_chart(fig, use_container_width=True, config={
     'displayModeBar': False,  # Hide toolbar
     'scrollZoom': False       # Disable scroll zoom
 })
-
 
 
