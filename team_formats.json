@@ -1,16 +1,19 @@
 
 {
-  "Old Belvedere J2": {
-    "logo": "https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png",
-    "header_color": "#000000"
-  },
-  "Old Wesley": {
-    "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png",
-    "header_color": "#FF0000"
-  },
-  "St.Mary's": {
-    "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/St-Marys-RFC-Crest.png",
-    "header_color": "#307FC6"
-  }
+    "Old Belvedere": {
+        "logo": "https://www.thefrontrowunion.com/wp-content/uploads/2020/09/Old-Belvedere-Crest.png",
+        "header_color": "#000000"
+    },
+    "Old Wesley": {
+        "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png",
+        "header_color": "#FF0000"
+    },
+    "St. Mary's": {
+        "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/St-Marys-RFC-Crest.png",
+        "header_color": "#307FC6"
+    },
+    "Terenure": {
+        "logo": "https://alchetron.com/cdn/terenure-college-rfc-32198669-fd32-44f2-bf6e-03443236188-resize-750.jpeg",
+        "header_color": "#ba55d3"
+    }
 }
-
