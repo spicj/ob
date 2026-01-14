@@ -8,7 +8,7 @@
         "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/Old-Wesley-Crest.png",
         "header_color": "#FF0000"
     },
-    "St. Mary's": {
+    "St.Mary's": {
         "logo": "https://www.oldwesley.ie/wp-content/uploads/2019/11/St-Marys-RFC-Crest.png",
         "header_color": "#307FC6"
     },
@@ -17,4 +17,5 @@
         "header_color": "#ba55d3"
     }
 }
+
 
