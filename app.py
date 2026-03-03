@@ -16,7 +16,7 @@ st.set_page_config(layout="wide", page_title="OB Lineouts", page_icon="🏉")
 # In Google Sheets: File → Share → Publish to web
 # → Sheet1 → CSV → Publish, then paste the URL.
 # -----------------------------------------------
-SHEET_URL = "https://docs.google.com/spreadsheets/d/19f9aFK5Ovdlu2L17Bj_cyOFQi4Gcs8072iXQnzYPL8c/edit?usp=sharing"
+SHEET_URL = "https://docs.google.com/spreadsheets/d/SHEET_ID/export?format=csv&gid=0"
 
 @st.cache_data(ttl=300)
 def load_data():
@@ -66,7 +66,7 @@ def defended_rate(sub):
 # -----------------------------------------------
 def hex_to_rgba(hex_color, alpha=0.12):
     h = hex_color.lstrip("#")
-    r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
 
 def styled_table(df_view, color, team_name, logo_url):
@@ -111,23 +111,34 @@ def styled_table(df_view, color, team_name, logo_url):
     </div>
     """
 
-def metric_card(label, value, color):
+def selector_card(logo_url, name, color):
+    logo_tag = f'<img src="{logo_url}" style="height:40px;width:40px;object-fit:contain;border-radius:4px">' if logo_url else ""
     return f"""
-    <div style="background:#fff;border-radius:10px;padding:12px 8px;text-align:center;
-                box-shadow:0 2px 6px rgba(0,0,0,0.08);flex:1;border-top:3px solid {color}">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:#888;
-                  letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">{label}</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#111">{value}</div>
+    <div style="background:white;border-radius:10px;padding:10px 14px;
+                box-shadow:0 1px 5px rgba(0,0,0,0.09);border-left:4px solid {color};
+                display:flex;align-items:center;gap:10px;margin-top:-8px;margin-bottom:12px">
+      {logo_tag}
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:{color}">{name}</span>
     </div>
     """
 
-def metrics_row(sub, color):
-    cards = (
-        metric_card("Top Call",     mode_call(sub), color) +
-        metric_card("Success Rate", f"{success_rate(sub):.1f}%", color) +
-        metric_card("Defended",     f"{defended_rate(sub):.1f}%", color)
-    )
-    return f'<div style="display:flex;gap:10px;margin-top:10px">{cards}</div>'
+def render_metric_cards(sub, color):
+    """Render 3 metric cards using st.columns to avoid Streamlit's flex CSS stripping."""
+    stats = [
+        ("Top Call",     mode_call(sub)),
+        ("Success Rate", f"{success_rate(sub):.1f}%"),
+        ("Defended",     f"{defended_rate(sub):.1f}%"),
+    ]
+    cols = st.columns(3)
+    for col, (label, value) in zip(cols, stats):
+        col.markdown(f"""
+        <div style="background:#fff;border-radius:10px;padding:14px 8px;text-align:center;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.08);border-top:3px solid {color}">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:#888;
+                      letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px">{label}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#111">{value}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # -----------------------------------------------
 # Global CSS
@@ -172,18 +183,6 @@ with sel_col2:
 team_logo_url, team_color = get_cfg(selected_team)
 opp_logo_url,  opp_color  = get_cfg(selected_opponent)
 
-# Selector cards with logo + colour bar
-def selector_card(logo_url, name, color):
-    logo_tag = f'<img src="{logo_url}" style="height:40px;width:40px;object-fit:contain;border-radius:4px">' if logo_url else ""
-    return f"""
-    <div style="background:white;border-radius:10px;padding:10px 14px;
-                box-shadow:0 1px 5px rgba(0,0,0,0.09);border-left:4px solid {color};
-                display:flex;align-items:center;gap:10px;margin-top:-8px;margin-bottom:12px">
-      {logo_tag}
-      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:{color}">{name}</span>
-    </div>
-    """
-
 with sel_col1:
     st.markdown(selector_card(team_logo_url, selected_team, team_color), unsafe_allow_html=True)
 with sel_col2:
@@ -205,12 +204,12 @@ st.markdown("<hr>", unsafe_allow_html=True)
 tcol, ocol = st.columns(2)
 
 with tcol:
-    st.markdown(styled_table(your_team_df[VIEW_COLS],  team_color, selected_team,     team_logo_url), unsafe_allow_html=True)
-    st.markdown(metrics_row(your_team_df,  team_color), unsafe_allow_html=True)
+    st.markdown(styled_table(your_team_df[VIEW_COLS], team_color, selected_team, team_logo_url), unsafe_allow_html=True)
+    render_metric_cards(your_team_df, team_color)
 
 with ocol:
-    st.markdown(styled_table(opposition_df[VIEW_COLS], opp_color,  selected_opponent, opp_logo_url),  unsafe_allow_html=True)
-    st.markdown(metrics_row(opposition_df, opp_color),  unsafe_allow_html=True)
+    st.markdown(styled_table(opposition_df[VIEW_COLS], opp_color, selected_opponent, opp_logo_url), unsafe_allow_html=True)
+    render_metric_cards(opposition_df, opp_color)
 
 # -----------------------------------------------
 # Pitch visualisation
@@ -271,7 +270,7 @@ fig.update_layout(
                title=dict(text="Distance to Opponent Try Line (m)",
                           font=dict(color="white", size=13)),
                tickfont=dict(color="white")),
-    yaxis=dict(range=[-5, 75], showgrid=False, zeroline=False,
+    yaxis=dict(range=[-10, 82], showgrid=False, zeroline=False,  # extra padding so edge markers aren't clipped
                tickvals=[0, 70], ticktext=["Near", "Far"],
                tickfont=dict(color="white", size=12)),
     margin=dict(t=50, b=70, l=60, r=20),
