@@ -123,7 +123,7 @@ def selector_card(logo_url, name, color):
     """
 
 def render_metric_cards(sub, color):
-    """Render 3 metric cards using st.columns to avoid Streamlit's flex CSS stripping."""
+    """Use st.columns so Streamlit handles layout — avoids flex being stripped from injected HTML."""
     stats = [
         ("Top Call",     mode_call(sub)),
         ("Success Rate", f"{success_rate(sub):.1f}%"),
@@ -217,25 +217,44 @@ with ocol:
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<h2 style='text-align:center;letter-spacing:0.05em'>Lineout Positions</h2>", unsafe_allow_html=True)
 
-PITCH_LEN, PITCH_WID = 100, 70
+# Y_OFFSET lifts the entire pitch rectangle away from the plot boundary so that
+# markers on the Near (Side=0) and Far (Side=70) touchlines are never clipped.
+# Data values 0 → Y_NEAR, 70 → Y_FAR; the axis range extends beyond both.
+Y_OFFSET  = 10
+PITCH_LEN = 100
+PITCH_WID = 70
+Y_NEAR    = Y_OFFSET               # Side=0  plots at y=10
+Y_FAR     = Y_OFFSET + PITCH_WID   # Side=70 plots at y=80
+
+def map_side(series):
+    """Remap raw Side values (0 or 70) into offset pitch coordinates."""
+    return series.apply(lambda v: Y_NEAR if float(v) == 0 else Y_FAR)
+
 fig = go.Figure()
 
-# Pitch background + in-goal shading
-fig.add_shape(type="rect", x0=0, y0=0, x1=PITCH_LEN, y1=PITCH_WID, fillcolor="#3a8a3a", line=dict(width=0))
+# Pitch background
+fig.add_shape(type="rect", x0=0, y0=Y_NEAR, x1=PITCH_LEN, y1=Y_FAR,
+              fillcolor="#3a8a3a", line=dict(width=0))
+
+# In-goal shading
 for x0, x1 in [(0, 5), (95, 100)]:
-    fig.add_shape(type="rect", x0=x0, y0=0, x1=x1, y1=PITCH_WID, fillcolor="#2d7030", line=dict(width=0))
+    fig.add_shape(type="rect", x0=x0, y0=Y_NEAR, x1=x1, y1=Y_FAR,
+                  fillcolor="#2d7030", line=dict(width=0))
 
-# Pitch lines
+# Dashed pitch lines + distance labels
 for x in [5, 22, 50, 78, 95]:
-    fig.add_shape(type="line", x0=x, y0=0, x1=x, y1=PITCH_WID,
+    fig.add_shape(type="line", x0=x, y0=Y_NEAR, x1=x, y1=Y_FAR,
                   line=dict(color="rgba(255,255,255,0.45)", width=1.5, dash="dash"))
-    fig.add_annotation(x=x, y=PITCH_WID + 1.5, text=f"{x}m", showarrow=False,
-                       font=dict(color="white", size=11, family="Bebas Neue"), xanchor="center")
+    fig.add_annotation(x=x, y=Y_FAR + 1.5, text=f"{x}m", showarrow=False,
+                       font=dict(color="white", size=11, family="Bebas Neue"),
+                       xanchor="center")
 
+# Try lines
 for x in [0, 100]:
-    fig.add_shape(type="line", x0=x, y0=0, x1=x, y1=PITCH_WID, line=dict(color="white", width=2.5))
+    fig.add_shape(type="line", x0=x, y0=Y_NEAR, x1=x, y1=Y_FAR,
+                  line=dict(color="white", width=2.5))
 
-# Scatter traces — won (circle) and lost (x) for each team
+# Scatter traces — circle = Won, x = Lost
 for sub, color, name in [
     (your_team_df,  team_color, selected_team),
     (opposition_df, opp_color,  selected_opponent),
@@ -246,7 +265,7 @@ for sub, color, name in [
         if len(s):
             fig.add_trace(go.Scatter(
                 x=s["Distance to Opponent Tryline"],
-                y=s["Side"],
+                y=map_side(s["Side"]),
                 mode="markers",
                 marker=dict(size=14, color=color, symbol=symbol,
                             opacity=0.9, line=dict(color="white", width=1.8)),
@@ -263,18 +282,23 @@ for sub, color, name in [
 fig.update_layout(
     font=dict(family="Bebas Neue, sans-serif"),
     paper_bgcolor="#1a1a1a",
-    plot_bgcolor="#3a8a3a",
+    plot_bgcolor="#1a1a1a",        # dark background outside the pitch rect
     legend=dict(orientation="h", yanchor="top", y=-0.08, xanchor="center", x=0.5,
                 bgcolor="rgba(0,0,0,0)", font=dict(color="white", size=13)),
     xaxis=dict(range=[-2, 102], showgrid=False, zeroline=False,
                title=dict(text="Distance to Opponent Try Line (m)",
                           font=dict(color="white", size=13)),
                tickfont=dict(color="white")),
-    yaxis=dict(range=[-10, 82], showgrid=False, zeroline=False,  # extra padding so edge markers aren't clipped
-               tickvals=[0, 70], ticktext=["Near", "Far"],
-               tickfont=dict(color="white", size=12)),
+    yaxis=dict(
+        range=[0, Y_FAR + Y_OFFSET],  # 0→90; pitch floats in middle at 10→80
+        showgrid=False, zeroline=False,
+        tickvals=[Y_NEAR, Y_FAR],
+        ticktext=["Near", "Far"],
+        tickfont=dict(color="white", size=12),
+    ),
     margin=dict(t=50, b=70, l=60, r=20),
     height=420,
 )
 
-st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False, "scrollZoom": False})
+st.plotly_chart(fig, use_container_width=True,
+                config={"displayModeBar": False, "scrollZoom": False})
